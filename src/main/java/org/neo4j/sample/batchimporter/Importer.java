@@ -70,13 +70,15 @@ public class Importer {
 
             Groups groups = new Groups();
 
-            importer.doImport(Inputs.input(
-                    InputIterable.replayable(() -> new SingleChunkInputIterator()),
-                    InputIterable.replayable(() -> new SingleChunkInputIterator()),
-                    IdMappers.strings(NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, groups),
-                    new BadCollector(System.err, 0, 0),  // TODO: provide reasonable numbers
-                    Inputs.knownEstimates(-1, -1, -1, -1,-1, -1,-1) // TODO: provide reasonable estimations
-            ));
+            try (BadCollector badCollector = new BadCollector(System.err, 0, 0)) { // TODO: provide reasonable numbers
+                importer.doImport(Inputs.input(
+                        InputIterable.replayable(() -> new SingleChunkInputIterator()),
+                        InputIterable.replayable(() -> new SingleChunkInputIterator()),
+                        IdMappers.strings(NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, groups),
+                        badCollector,
+                        Inputs.knownEstimates(-1, -1, -1, -1, -1, -1, -1) // TODO: provide reasonable estimations
+                ));
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package org.neo4j.sample.batchimporter;
 
+import org.neo4j.unsafe.impl.batchimport.NodeImporter;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
@@ -12,8 +13,14 @@ public class NodeInputChunk implements InputChunk {
     @Override
     public boolean next(InputEntityVisitor visitor) throws IOException {
 
-        visitor.id(sent);
-        return sent++ < 10;
+        if (visitor instanceof NodeImporter) {
+            visitor.id(sent);
+            visitor.endOfEntity();
+            return sent++ < 10;
+        } else {
+            return false;
+        }
+
     }
 
     @Override
