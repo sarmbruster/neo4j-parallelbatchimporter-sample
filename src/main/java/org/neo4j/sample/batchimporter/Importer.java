@@ -12,32 +12,29 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.tooling.ImportTool;
 import org.neo4j.unsafe.impl.batchimport.*;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.values.storable.Value;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.function.ToIntFunction;
 
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaultVisible;
 
 public class Importer {
 
-    public static void main(String[] args) throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public static void main(String[] args) throws Throwable {
 
         File storeDir = Files.createTempDirectory("dummy").toFile();
         LogProvider logging = NullLogProvider.getInstance();
         JobScheduler jobScheduler = new CentralJobScheduler();
-
+        jobScheduler.init();
 
         try (FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction()) {
 
@@ -62,7 +59,7 @@ public class Importer {
                     new SimpleLogService( logging, logging ),
                     defaultVisible( jobScheduler ),
                     AdditionalInitialIds.EMPTY,
-                     dbConfig,
+                    dbConfig,
                     RecordFormatSelector.selectForConfig( dbConfig, logging ),
                     NO_MONITOR
             );
@@ -71,32 +68,15 @@ public class Importer {
             printOverviewMethod.setAccessible(true);
             printOverviewMethod.invoke(null, storeDir, Collections.emptyList(), Collections.emptyList(), config, System.out);
 
-            importer.doImport(new Input() {
-                @Override
-                public InputIterable nodes() {
-                    return null;
-                }
+            Groups groups = new Groups();
 
-                @Override
-                public InputIterable relationships() {
-                    return null;
-                }
-
-                @Override
-                public IdMapper idMapper(NumberArrayFactory numberArrayFactory) {
-                    return null;
-                }
-
-                @Override
-                public Collector badCollector() {
-                    return null;
-                }
-
-                @Override
-                public Estimates calculateEstimates(ToIntFunction<Value[]> valueSizeCalculator) throws IOException {
-                    return null;
-                }
-            });
+            importer.doImport(Inputs.input(
+                    InputIterable.replayable(() -> new SingleChunkInputIterator()),
+                    InputIterable.replayable(() -> new SingleChunkInputIterator()),
+                    IdMappers.strings(NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, groups),
+                    new BadCollector(System.err, 0, 0),  // TODO: provide reasonable numbers
+                    Inputs.knownEstimates(-1, -1, -1, -1,-1, -1,-1) // TODO: provide reasonable estimations
+            ));
         }
     }
 }
