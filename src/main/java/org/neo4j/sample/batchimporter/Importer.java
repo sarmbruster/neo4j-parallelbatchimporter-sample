@@ -11,7 +11,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.tooling.ImportTool;
 import org.neo4j.unsafe.impl.batchimport.*;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -21,6 +20,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -31,7 +31,10 @@ public class Importer {
 
     public static void main(String[] args) throws Throwable {
 
-        File storeDir = Files.createTempDirectory("dummy").toFile();
+        Path rootPath = Files.createTempDirectory("dummy");
+
+        File storeDir = new File(rootPath.toString() + "/databases/graph.db");
+        storeDir.mkdirs();
         LogProvider logging = NullLogProvider.getInstance();
         JobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
@@ -72,9 +75,10 @@ public class Importer {
 
             try (BadCollector badCollector = new BadCollector(System.err, 0, 0)) { // TODO: provide reasonable numbers
                 importer.doImport(Inputs.input(
-                        InputIterable.replayable(() -> new SingleChunkInputIterator()),
-                        InputIterable.replayable(() -> new SingleChunkInputIterator()),
-                        IdMappers.strings(NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, groups),
+                        InputIterable.replayable(() -> new SingleChunkInputIterator(new NodeInputChunk(100_000))),
+                        InputIterable.replayable(() -> new InputIterator.Empty()),
+                        IdMappers.actual(),
+                        //IdMappers.strings(NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, groups),
                         badCollector,
                         Inputs.knownEstimates(-1, -1, -1, -1, -1, -1, -1) // TODO: provide reasonable estimations
                 ));

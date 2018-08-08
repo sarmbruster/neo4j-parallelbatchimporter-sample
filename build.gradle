@@ -14,18 +14,21 @@ idea {
 }
 
 ext {
-    neo4jVersion = "3.4.0-rc01"
+    neo4jVersion = "3.4.5"
 }
 
 repositories {
     mavenCentral()
-    maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
+//    mavenCentral()
+//    maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
 }
 
 dependencies {
 
     //compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: '1.6.0'
     compile group: 'org.neo4j', name: 'neo4j', version: neo4jVersion
+    compile group: 'com.fasterxml.uuid', name: 'java-uuid-generator', version: '3.1.5'
+
     testCompile group: 'org.neo4j.test', name: 'neo4j-harness', version: neo4jVersion
 
 

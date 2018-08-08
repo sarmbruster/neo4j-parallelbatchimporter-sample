@@ -8,11 +8,15 @@ import java.io.IOException;
 public class SingleChunkInputIterator extends InputIterator.Adapter {
 
     private boolean alreadyExhausted = false;
+    private final InputChunk inputChunk;
+
+    public SingleChunkInputIterator(InputChunk inputChunk) {
+        this.inputChunk = inputChunk;
+    }
 
     @Override
     public InputChunk newChunk() {
-
-        return alreadyExhausted ? null : new NodeInputChunk();
+        return alreadyExhausted ? null : inputChunk;
     }
 
     @Override
