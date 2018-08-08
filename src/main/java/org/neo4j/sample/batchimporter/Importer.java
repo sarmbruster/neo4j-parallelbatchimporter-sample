@@ -29,9 +29,13 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaul
 
 public class Importer {
 
+    public static final int NUMBER_OF_NODES = 10_000_000;
+    public static final int NUMBER_OF_RELATIONSHIPS = NUMBER_OF_NODES * 10;  // 10 rel on avg per node
+
     public static void main(String[] args) throws Throwable {
 
         Path rootPath = Files.createTempDirectory("dummy");
+//        String rootPath = "/mnt/dropbox/tmp";  // a dir with enough space
 
         File storeDir = new File(rootPath.toString() + "/databases/graph.db");
         storeDir.mkdirs();
@@ -75,12 +79,12 @@ public class Importer {
 
             try (BadCollector badCollector = new BadCollector(System.err, 0, 0)) { // TODO: provide reasonable numbers
                 importer.doImport(Inputs.input(
-                        InputIterable.replayable(() -> new SingleChunkInputIterator(new NodeInputChunk(100_000))),
-                        InputIterable.replayable(() -> new InputIterator.Empty()),
+                        InputIterable.replayable(() -> new SingleChunkInputIterator(new NodeInputChunk(NUMBER_OF_NODES))),
+                        InputIterable.replayable(() -> new SingleChunkInputIterator(new RandomRelationshipInputChunk(NUMBER_OF_NODES, NUMBER_OF_RELATIONSHIPS))),
                         IdMappers.actual(),
                         //IdMappers.strings(NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, groups),
                         badCollector,
-                        Inputs.knownEstimates(-1, -1, -1, -1, -1, -1, -1) // TODO: provide reasonable estimations
+                        Inputs.knownEstimates(NUMBER_OF_NODES, NUMBER_OF_RELATIONSHIPS, NUMBER_OF_NODES, 0, -1, -1, -1) // TODO: provide reasonable estimations
                 ));
             }
         }

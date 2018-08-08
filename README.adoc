@@ -1,3 +1,5 @@
 # sample for using neo4j parallel batch importer programmatically
 
-tbd
+Create a graph with a configurable number of nodes and relationships. Each node will have a `uuid` property and a `Document` label.
+
+Relationships are set randomly, degree distribution is expected to be a gaussian distribution.
